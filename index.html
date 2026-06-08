@@ -1,311 +1,38 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>⚡ Electric AI Assistant</title>
-
-<style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial;
-}
-
-body{
-background:linear-gradient(135deg,#001b3d,#0d47a1);
-min-height:100vh;
-display:flex;
-justify-content:center;
-align-items:center;
-color:white;
-}
-
-.container{
-width:90%;
-max-width:800px;
-background:rgba(255,255,255,0.08);
-padding:30px;
-border-radius:20px;
-backdrop-filter:blur(10px);
-}
-
-h1{
-text-align:center;
-margin-bottom:20px;
-}
-
-input,button,textarea{
-width:100%;
-padding:12px;
-margin:8px 0;
-border:none;
-border-radius:10px;
-}
-
-button{
-background:#42a5f5;
-color:white;
-cursor:pointer;
-font-weight:bold;
-}
-
-.result{
-margin-top:15px;
-padding:10px;
-background:white;
-color:black;
-border-radius:10px;
-}
-
-#aiAnswer{
-min-height:120px;
-}
-</style>
-</head>
-<body>
-
-<div class="container">
-
-<h1>⚡ Electric AI Assistant</h1>
-
-<h2>회원가입 / 로그인</h2>
-
-<input type="email" id="email" placeholder="이메일">
-
-<input type="password" id="password" placeholder="비밀번호">
-
-<button onclick="signup()">회원가입</button>
-
-<button onclick="login()">로그인</button>
-
-<button onclick="logout()">로그아웃</button>
-
-<hr>
-
-<h2>전기 계산기</h2>
-
-<input id="voltage" placeholder="전압(V)">
-
-<input id="current" placeholder="전류(A)">
-
-<button onclick="calculatePower()">
-전력 계산
-</button>
-
-<div class="result" id="powerResult"></div>
-
-<hr>
-
-<h2>AI 전기 선생님</h2>
-
-<textarea
-id="question"
-placeholder="전기 관련 질문 입력">
-</textarea>
-
-<button onclick="askAI()">
-AI 질문하기
-</button>
-
-<button onclick="speakAnswer()">
-🔊 음성 듣기
-</button>
-
-<div class="result" id="aiAnswer"></div>
-
-</div>
-
 <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 import {
-initializeApp
-}
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-import {
-getAuth,
-createUserWithEmailAndPassword,
-signInWithEmailAndPassword,
-signOut
-}
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-import {
-getFirestore,
-collection,
-addDoc
-}
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  getFirestore,
+  collection,
+  addDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-
-apiKey:"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",
-
-authDomain:"",
-
-projectId:"",
-
-storageBucket:"",
-
-messagingSenderId:"",
-
-appId:""
-
+  apiKey: "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",
+  authDomain: "여기에_authDomain",
+  projectId: "여기에_projectId",
+  storageBucket: "여기에_storageBucket",
+  messagingSenderId: "여기에_senderId",
+  appId: "여기에_appId"
 };
 
-const app=initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 
-const auth=getAuth(app);
+window.auth = getAuth(app);
+window.db = getFirestore(app);
 
-const db=getFirestore(app);
+window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+window.signOut = signOut;
 
-window.signup=async()=>{
-
-try{
-
-await createUserWithEmailAndPassword(
-auth,
-email.value,
-password.value
-);
-
-alert("회원가입 성공");
-
-}catch(e){
-
-alert(e.message);
-
-}
-
-};
-
-window.login=async()=>{
-
-try{
-
-await signInWithEmailAndPassword(
-auth,
-email.value,
-password.value
-);
-
-alert("로그인 성공");
-
-}catch(e){
-
-alert(e.message);
-
-}
-
-};
-
-window.logout=async()=>{
-
-await signOut(auth);
-
-alert("로그아웃");
-
-};
-
-window.calculatePower=async()=>{
-
-const v=parseFloat(
-document.getElementById("voltage").value
-);
-
-const c=parseFloat(
-document.getElementById("current").value
-);
-
-const power=v*c;
-
-document.getElementById(
-"powerResult"
-).innerHTML=
-
-`전력 : ${power}W`;
-
-await addDoc(
-collection(db,"electricData"),
-{
-voltage:v,
-current:c,
-power:power,
-date:new Date().toISOString()
-}
-);
-
-};
-
-window.askAI=async()=>{
-
-const question=
-document.getElementById("question").value;
-
-const apiKey="여기에_GEMINI_API_KEY";
-
-const res=await fetch(
-
-`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-
-{
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-
-contents:[{
-
-parts:[{
-text:
-`전기공학 선생님처럼 답변해줘.
-${question}`
-}]
-
-}]
-
-})
-
-}
-
-);
-
-const data=await res.json();
-
-const answer=
-
-data.candidates[0]
-.content.parts[0].text;
-
-document.getElementById(
-"aiAnswer"
-).innerText=answer;
-
-};
-
-window.speakAnswer=()=>{
-
-const text=
-document.getElementById(
-"aiAnswer"
-).innerText;
-
-const speech=
-new SpeechSynthesisUtterance(text);
-
-speech.lang="ko-KR";
-
-speechSynthesis.speak(speech);
-
-};
-
+window.collection = collection;
+window.addDoc = addDoc;
+window.serverTimestamp = serverTimestamp;
 </script>
-
-</body>
-</html>

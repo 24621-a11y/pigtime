@@ -3,18 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>전기 AI 박사 & TTS 시스템</title>
-
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-
+  <title>⚡ 전기 AI 박사 & TTS 상담소 (데이터 관리형)</title>
   <style>
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
       min-height: 100vh;
-      background: linear-gradient(135deg, #eceff1, #cfd8dc);
+      background: linear-gradient(135deg, #e3f2fd, #fce4ec);
       font-family: 'Segoe UI', Arial, sans-serif;
       color: #333;
     }
@@ -25,7 +21,7 @@
       background: #ffffff;
       border-radius: 24px;
       padding: 28px;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.16);
     }
 
     h1 {
@@ -35,40 +31,41 @@
       color: #1a237e;
     }
 
+    h2 {
+      margin-top: 0;
+      font-size: 22px;
+      color: #1a237e;
+    }
+
     .subtitle {
       text-align: center;
       color: #5c6bc0;
-      margin-bottom: 24px;
-      font-size: 15px;
+      margin-bottom: 28px;
+      font-size: 14px;
       font-weight: 500;
     }
 
-    .info {
-      padding: 14px;
-      margin-bottom: 20px;
-      border-radius: 14px;
-      background: #e8eaf6;
-      color: #1a237e;
-      font-size: 14px;
-      line-height: 1.6;
-      border-left: 5px solid #3f51b5;
+    .auth-box {
+      max-width: 420px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
-    .option-box {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    select, input {
-      height: 44px;
-      padding: 0 12px;
+    input, select {
+      height: 46px;
+      padding: 0 14px;
       border: 1px solid #c5cae9;
       border-radius: 12px;
-      font-size: 14px;
+      font-size: 15px;
       outline: none;
       background: #fff;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #3f51b5;
+      box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.15);
     }
 
     textarea {
@@ -82,26 +79,6 @@
       line-height: 1.5;
       outline: none;
       font-family: Arial, sans-serif;
-    }
-
-    textarea:focus, select:focus, input:focus {
-      border-color: #3f51b5;
-      box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.15);
-    }
-
-    .label {
-      font-weight: bold;
-      margin-bottom: 6px;
-      color: #1a237e;
-      margin-top: 14px;
-    }
-
-    .button-row {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-      margin-top: 14px;
     }
 
     button, .download-link {
@@ -130,26 +107,61 @@
       transform: none;
     }
 
-    .make-btn {
-      background: #3f51b5;
-      color: white;
+    .login-btn { background: #42a5f5; color: white; }
+    .signup-btn { background: #7e57c2; color: white; }
+    .logout-btn { background: #455a64; color: white; }
+    .make-btn { background: #3f51b5; color: white; }
+    .clear-btn { background: #b0bec5; color: white; }
+    .download-link { background: #00796b; color: white; }
+    .refresh-btn { background: #66bb6a; color: white; margin-top: 14px; width: 100%; }
+    .edit-btn { background: #ffca28; color: #333; }
+    .delete-btn { background: #ef5350; color: white; }
+    .save-btn { background: #7e57c2; color: white; }
+    .cancel-btn { background: #b0bec5; color: white; }
+
+    .option-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
     }
 
-    .clear-btn {
-      background: #b0bec5;
-      color: white;
+    .button-row {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      margin-top: 14px;
     }
 
-    .download-link {
-      background: #00796b;
-      color: white;
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+      padding: 14px;
+      border-radius: 16px;
+      background: #e8eaf6;
+      border-left: 5px solid #3f51b5;
     }
 
-    .hidden { display: none; }
+    .user-info {
+      font-size: 14px;
+      color: #1a237e;
+    }
+
+    .label {
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #1a237e;
+      margin-top: 14px;
+    }
 
     .status {
       min-height: 24px;
       margin-top: 14px;
+      margin-bottom: 14px;
       color: #e65100;
       font-size: 14px;
       font-weight: bold;
@@ -174,102 +186,184 @@
       white-space: pre-wrap;
     }
 
-    audio {
-      width: 100%;
-      margin-top: 10px;
+    audio { width: 100%; margin-top: 10px; }
+
+    .list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+
+    .item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 16px;
+      border-radius: 16px;
+      background: #f7f9fb;
+      border: 1px solid #edf1f5;
     }
 
-    .help {
-      margin-top: 20px;
-      font-size: 13px;
-      color: #777;
+    .item-title { margin: 0 0 6px; font-size: 18px; font-weight: bold; color: #1a237e; }
+    .item-content { margin: 0; color: #555; line-height: 1.5; word-break: break-all; white-space: pre-wrap; }
+    .item-date { margin-top: 8px; font-size: 12px; color: #999; }
+    .item-actions { display: flex; gap: 8px; }
+    .edit-box { display: grid; grid-template-columns: 1fr; gap: 8px; width: 100%; }
+
+    .empty {
+      text-align: center;
+      padding: 30px;
+      color: #888;
+      background: #f7f9fb;
+      border-radius: 16px;
+    }
+
+    .hidden { display: none; }
+
+    .notice, .help {
+      max-width: 100%;
+      margin: 20px auto 0;
+      padding: 14px;
+      border-radius: 14px;
+      background: #fff8e1;
+      color: #6d4c41;
+      font-size: 14px;
       line-height: 1.6;
     }
 
     @media (max-width: 700px) {
-      .option-box { grid-template-columns: 1fr; }
+      .option-box, .item, .top-bar { grid-template-columns: 1fr; flex-direction: column; align-items: stretch; }
       .button-row { justify-content: stretch; }
       button, .download-link { width: 100%; }
+      .item-actions { justify-content: flex-end; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>⚡ 전기 AI 박사 & TTS 상담소</h1>
-    <div class="subtitle">전기에 대해 질문하면 AI 박사가 답변하고 음성으로 읽어줍니다</div>
+    <div class="subtitle">Firebase 로그인 데이터 연동 최종 시스템</div>
 
-    <div class="info">
-      <strong>[작동 방식 및 저장 안내]</strong><br />
-      질문을 입력하면 전기공학 AI 박사의 답변과 음성을 생성한 후, 대화 결과물이 <strong>Firebase Firestore 데이터베이스</strong>에 자동으로 기록됩니다.
-    </div>
-
-    <div class="label">목소리 및 생성 설정</div>
-    <div class="option-box">
-      <select id="modelSelect">
-        <option value="tts-1">tts-1 빠른 생성</option>
-        <option value="tts-1-hd">tts-1-hd 고품질</option>
-      </select>
-
-      <select id="voiceSelect">
-        <option value="onyx" selected>onyx (진중한 박사님 타입)</option>
-        <option value="alloy">alloy (기본)</option>
-        <option value="echo">echo</option>
-        <option value="fable">fable</option>
-        <option value="nova">nova</option>
-        <option value="shimmer">shimmer</option>
-      </select>
-
-      <input id="speedInput" type="number" min="0.25" max="4.0" step="0.05" value="1.0" placeholder="말하기 속도" />
-    </div>
-
-    <div>
-      <div class="label">전기 관련 질문 입력</div>
-      <textarea id="textInput" placeholder="전기에 대해 궁금한 점을 질문해보세요! &#10;예: 옴의 법칙이 무엇인지 쉽게 설명해 주세요. / 교류와 직류의 차이점은 무엇인가요?"></textarea>
-    </div>
-
-    <div class="button-row">
-      <button class="clear-btn" id="clearBtn">초기화</button>
-      <button class="make-btn" id="makeBtn">💡 AI 박사에게 질문하기</button>
-    </div>
-
-    <div id="status" class="status"></div>
-
-    <div id="resultBox" class="result-box hidden">
-      <div class="label">👨‍🔬 AI 전기 박사의 답변</div>
-      <div id="aiResponseText" class="ai-response"></div>
-
-      <div class="label">🔊 답변 음성 듣기</div>
-      <audio id="audioPlayer" controls></audio>
-      <div class="button-row">
-        <a id="downloadLink" class="download-link" href="#" download="electric-doctor-answer.mp3">오디오 mp3 다운로드</a>
+    <section id="authSection">
+      <div class="auth-box">
+        <h2>로그인 / 회원가입</h2>
+        <input id="emailInput" type="email" placeholder="이메일" />
+        <input id="passwordInput" type="password" placeholder="비밀번호 6자리 이상" />
+        <button class="login-btn" id="loginBtn">로그인</button>
+        <button class="signup-btn" id="signupBtn">회원가입</button>
       </div>
-    </div>
+      <div class="notice">
+        처음 사용하는 이메일은 회원가입을 먼저 누르세요.<br />
+        이미 가입한 이메일은 로그인 버튼을 누르면 됩니다.
+      </div>
+    </section>
 
-    <div class="help">
-      * 복잡한 질문은 AI 답변과 음성 생성에 최대 10~20초 이상 소요될 수 있습니다.<br />
-      * Ctrl + Enter를 누르면 바로 질문이 전송됩니다.
-    </div>
+    <section id="mainSection" class="hidden">
+      <div class="top-bar">
+        <div class="user-info">
+          접속 연구원 계정: <strong id="userEmail"></strong>
+        </div>
+        <button class="logout-btn" id="logoutBtn">로그아웃</button>
+      </div>
+
+      <div class="label">목소리 및 생성 설정</div>
+      <div class="option-box">
+        <select id="modelSelect">
+          <option value="tts-1">tts-1 빠른 생성</option>
+          <option value="tts-1-hd">tts-1-hd 고품질</option>
+        </select>
+
+        <select id="voiceSelect">
+          <option value="onyx" selected>onyx (진중한 박사님 타입)</option>
+          <option value="alloy">alloy (기본)</option>
+          <option value="echo">echo</option>
+          <option value="fable">fable</option>
+          <option value="nova">nova</option>
+          <option value="shimmer">shimmer</option>
+        </select>
+
+        <input id="speedInput" type="number" min="0.25" max="4.0" step="0.05" value="1.0" placeholder="말하기 속도" />
+      </div>
+
+      <div>
+        <div class="label">전기 관련 질문 입력</div>
+        <textarea id="textInput" placeholder="전기에 대해 궁금한 점을 질문해보세요! &#10;예: 옴의 법칙이 무엇인지 쉽게 설명해 주세요. / 교류와 직류의 차이점은 무엇인가요?"></textarea>
+      </div>
+
+      <div class="button-row">
+        <button class="clear-btn" id="clearBtn">초기화</button>
+        <button class="make-btn" id="makeBtn">💡 AI 박사에게 질문하기</button>
+      </div>
+
+      <div id="status" class="status"></div>
+
+      <div id="resultBox" class="result-box hidden">
+        <div class="label">👨‍🔬 AI 전기 박사의 답변</div>
+        <div id="aiResponseText" class="ai-response"></div>
+
+        <div class="label">🔊 답변 음성 듣기</div>
+        <audio id="audioPlayer" controls></audio>
+        <div class="button-row">
+          <a id="downloadLink" class="download-link" href="#" download="electric-doctor-answer.mp3">오디오 mp3 다운로드</a>
+        </div>
+      </div>
+
+      <div class="help">
+        * 복잡한 질문은 AI 답변과 음성 생성에 최대 10~20초 이상 소요될 수 있습니다.<br />
+        * Ctrl + Enter를 누르면 바로 질문이 전송됩니다.
+      </div>
+
+      <hr style="margin-top:40px; border:0; border-top:1px solid #c5cae9;">
+      <h2 style="margin-top:20px;">📜 나의 상담 저장 목록</h2>
+      <button class="refresh-btn" id="refreshBtn">데이터 새로고침</button>
+      <div id="dataList" class="list"></div>
+    </section>
   </div>
 
-  <script>
-    // 🔥 주신 Firebase 프로젝트 키 정보를 그대로 매핑했습니다.
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged
+    } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import {
+      getDatabase,
+      ref,
+      push,
+      set,
+      update,
+      remove,
+      onValue,
+      off
+    } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+    // 💡 전달해주신 Firebase 정보 연동 완료
     const firebaseConfig = {
-      apiKey: "AIzaSyDvDGmsuZtckupjVDm89Fr4cXQKVup3Zs0",
-      authDomain: "test-7c414.firebaseapp.com",
-      databaseURL: "https://test-7c414-default-rtdb.firebaseio.com",
-      projectId: "test-7c414",
-      storageBucket: "test-7c414.firebasestorage.app",
-      messagingSenderId: "760368119906",
-      appId: "1:760368119906:web:881bce0639c0529117913b",
-      measurementId: "G-6G3J8QHW51"
+      apiKey: 'AIzaSyDO-v52Ehwphh5gW0WBzu9_DliMhOzy4Yo',
+      authDomain: 'kang-f4e85.firebaseapp.com',
+      databaseURL: 'https://kang-f4e85-default-rtdb.firebaseio.com',
+      projectId: 'kang-f4e85',
+      storageBucket: 'kang-f4e85.firebasestorage.app',
+      messagingSenderId: '107057126084',
+      appId: '1:107057126084:web:30f7bcb3f25dd2aa4a0791',
+      measurementId: 'G-DJ52YTYQZM'
     };
 
-    // Firebase 및 Firestore 초기화
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const database = getDatabase(app);
 
-    // 기존에 세팅해두신 Google Apps Script 웹앱 URL
+    // 구글 앱스 스크립트 웹앱 URL 연동 유지
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4fXNSfeRl6RHk89WTp4M-f6n2sU0MYIkLAsinURyhM2APqDqeAXZuIP31bvEkbLPL/exec';
+
+    const authSection = document.getElementById('authSection');
+    const mainSection = document.getElementById('mainSection');
+    const emailInput = document.getElementById('emailInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const loginBtn = document.getElementById('loginBtn');
+    const signupBtn = document.getElementById('signupBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userEmail = document.getElementById('userEmail');
 
     const textInput = document.getElementById('textInput');
     const modelSelect = document.getElementById('modelSelect');
@@ -283,15 +377,116 @@
     const audioPlayer = document.getElementById('audioPlayer');
     const downloadLink = document.getElementById('downloadLink');
 
-    makeBtn.addEventListener('click', askElectricDoctor);
-    clearBtn.addEventListener('click', clearPage);
+    const refreshBtn = document.getElementById('refreshBtn');
+    const dataList = document.getElementById('dataList');
 
-    textInput.addEventListener('keydown', function(event) {
-      if (event.key === 'Enter' && event.ctrlKey) {
-        askElectricDoctor();
+    let currentUser = null;
+    let currentItemsRef = null;
+
+    function setStatus(message) {
+      statusBox.textContent = message;
+    }
+
+    function getEmailAndPassword() {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+      if (!email || !password) {
+        alert('이메일과 비밀번호를 모두 입력해주세요.');
+        return null;
+      }
+      if (password.length < 6) {
+        alert('비밀번호는 6자리 이상이어야 합니다.');
+        return null;
+      }
+      return { email, password };
+    }
+
+    signupBtn.addEventListener('click', async () => {
+      const account = getEmailAndPassword();
+      if (!account) return;
+      try {
+        await createUserWithEmailAndPassword(auth, account.email, account.password);
+        alert('회원가입이 완료되었습니다.');
+      } catch (error) {
+        alert(getKoreanErrorMessage(error.code));
       }
     });
 
+    loginBtn.addEventListener('click', async () => {
+      const account = getEmailAndPassword();
+      if (!account) return;
+      try {
+        await signInWithEmailAndPassword(auth, account.email, account.password);
+      } catch (error) {
+        alert(getKoreanErrorMessage(error.code));
+      }
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+      } catch (error) {
+        alert('로그아웃에 실패했습니다.');
+      }
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        showMainPage(user);
+        startRealtimeDataListener(user.uid);
+      } else {
+        currentUser = null;
+        showAuthPage();
+        stopRealtimeDataListener();
+      }
+    });
+
+    function showMainPage(user) {
+      authSection.classList.add('hidden');
+      mainSection.classList.remove('hidden');
+      userEmail.textContent = user.email;
+      emailInput.value = '';
+      passwordInput.value = '';
+    }
+
+    function showAuthPage() {
+      authSection.classList.remove('hidden');
+      mainSection.classList.add('hidden');
+      userEmail.textContent = '';
+      dataList.innerHTML = '';
+      clearPage();
+    }
+
+    // 📡 실시간 데이터 연동 핸들러
+    function startRealtimeDataListener(uid) {
+      stopRealtimeDataListener();
+      setStatus('상담 내역 데이터를 동기화하는 중...');
+
+      currentItemsRef = ref(database, `users/${uid}/items`);
+
+      onValue(currentItemsRef, (snapshot) => {
+        const data = snapshot.val();
+        renderData(data);
+        setStatus('데이터가 실시간으로 안전하게 동기화되었습니다.');
+      }, (error) => {
+        console.error(error);
+        setStatus('데이터를 불러오지 못했습니다. Firebase Realtime Database 규칙을 확인해 보세요.');
+      });
+    }
+
+    function stopRealtimeDataListener() {
+      if (currentItemsRef) {
+        off(currentItemsRef);
+        currentItemsRef = null;
+      }
+    }
+
+    refreshBtn.addEventListener('click', () => {
+      if (currentUser) startRealtimeDataListener(currentUser.uid);
+    });
+
+    // 💡 전기공학 AI 박사에게 API 요청 로직
     async function askElectricDoctor() {
       const question = textInput.value.trim();
       const model = modelSelect.value;
@@ -303,12 +498,17 @@
         return;
       }
 
-      try {
-        setLoading(true);
-        resultBox.classList.add('hidden');
-        statusBox.textContent = '⚡ AI 박사님이 답변을 생각하고 음성을 만드는 중입니다... 잠시만 기다려주세요.';
+      if (!currentUser) {
+        alert('세션이 만료되었습니다. 다시 로그인해 주세요.');
+        return;
+      }
 
-        // Apps Script 서버로 'question' 데이터와 tts 옵션을 함께 전송
+      try {
+        makeBtn.disabled = true;
+        makeBtn.textContent = '⚡ 생성 중...';
+        resultBox.classList.add('hidden');
+        setStatus('⚡ AI 박사님이 답변을 생각하고 음성을 만드는 중입니다... 잠시만 기다려주세요.');
+
         const response = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
           body: JSON.stringify({
@@ -322,92 +522,206 @@
 
         const data = await response.json();
 
-        if (data.error) {
-          throw new Error(data.error);
-        }
+        if (data.error) throw new Error(data.error);
 
-        // 서버에서 받아온 AI 답변 텍스트 화면에 표기
         if (data.responseText) {
           aiResponseText.textContent = data.responseText;
         } else {
           aiResponseText.textContent = "답변 텍스트를 불러오지 못했습니다.";
         }
 
-        if (!data.audioBase64) {
-          throw new Error('음성 데이터를 받지 못했습니다.');
-        }
+        if (!data.audioBase64) throw new Error('음성 데이터를 받지 못했습니다.');
 
-        // Base64 데이터를 재생 가능한 오디오 URL로 변환
         const audioUrl = base64ToAudioUrl(data.audioBase64, 'audio/mpeg');
-
         audioPlayer.src = audioUrl;
         downloadLink.href = audioUrl;
         downloadLink.download = makeFileName();
         
         resultBox.classList.remove('hidden');
-        statusBox.textContent = '✅ 답변 완료! Firebase에 대화 기록을 기록하는 중입니다...';
+        setStatus('✅ 답변 성공! 내 계정에 대화 내역을 저장하는 중...');
 
-        // 🔥 [추가 로직] Firestore의 'history' 컬렉션에 실시간 데이터 추가
-        await db.collection("history").add({
-          question: question,
-          answer: data.responseText,
-          voiceOption: voice,
-          speedOption: speed,
-          modelOption: model,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp() // 서버 표준 시간 저장
+        // 💾 실시간 데이터베이스(RTDB)에 대화 내용 업로드 자동 연동
+        const itemsRef = ref(database, `users/${currentUser.uid}/items`);
+        const newItemRef = push(itemsRef);
+
+        await set(newItemRef, {
+          title: question, // 질문 내용을 제목으로 활용
+          content: data.responseText, // 박사의 답변을 내용으로 활용
+          createdAt: new Date().toLocaleString('ko-KR'),
+          updatedAt: ''
         });
 
-        statusBox.textContent = '✅ 답변 생성 및 Firebase 저장 성공!';
+        setStatus('✅ 답변 생성 및 데이터 저장 완료!');
       } catch (error) {
         console.error(error);
-        statusBox.textContent = '❌ 요청 실패';
+        setStatus('❌ 요청 실패');
         alert('오류가 발생했습니다.\n\n' + error.message);
       } finally {
-        setLoading(false);
+        makeBtn.disabled = false;
+        makeBtn.textContent = '💡 AI 박사에게 질문하기';
       }
     }
+
+    // 🗑️ 데이터 삭제 글로벌 스크립트 바인딩
+    window.deleteData = async function(id) {
+      if (!currentUser) return;
+      const isConfirmed = confirm('정말 이 기록을 삭제하시겠습니까?');
+      if (!isConfirmed) return;
+
+      try {
+        await remove(ref(database, `users/${currentUser.uid}/items/${id}`));
+      } catch (error) {
+        console.error(error);
+        alert('기록 삭제에 실패했습니다.');
+      }
+    };
+
+    // ✏️ 데이터 수정 글로벌 스크립트 바인딩
+    window.updateData = async function(id) {
+      if (!currentUser) return;
+      const editTitle = document.getElementById(`edit-title-${id}`).value.trim();
+      const editContent = document.getElementById(`edit-content-${id}`).value.trim();
+
+      if (!editTitle || !editContent) {
+        alert('수정할 내용들을 빠짐없이 채워주세요.');
+        return;
+      }
+
+      try {
+        await update(ref(database, `users/${currentUser.uid}/items/${id}`), {
+          title: editTitle,
+          content: editContent,
+          updatedAt: new Date().toLocaleString('ko-KR')
+        });
+      } catch (error) {
+        console.error(error);
+        alert('기록 수정에 실패했습니다.');
+      }
+    };
+
+    // 화면에 저장 목록 렌더링
+    function renderData(data) {
+      dataList.innerHTML = '';
+      if (!data) {
+        dataList.innerHTML = '<div class="empty">아직 보관된 상담 내역이 없습니다.</div>';
+        return;
+      }
+
+      const entries = Object.entries(data).reverse();
+      entries.forEach(([id, item]) => {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.id = `item-${id}`;
+
+        div.innerHTML = `
+          <div>
+            <p class="item-title">❓ ${escapeHTML(item.title || '')}</p>
+            <p class="item-content">👨‍🔬 ${escapeHTML(item.content || '')}</p>
+            <div class="item-date">
+              기록일시: ${item.createdAt || '-'}
+              ${item.updatedAt ? ` / 수정일시: ${item.updatedAt}` : ''}
+            </div>
+          </div>
+          <div class="item-actions">
+            <button class="edit-btn" onclick="showEditForm('${id}', '${escapeForAttribute(item.title || '')}', '${escapeForAttribute(item.content || '')}')">수정</button>
+            <button class="delete-btn" onclick="deleteData('${id}')">삭제</button>
+          </div>
+        `;
+        dataList.appendChild(div);
+      });
+    }
+
+    window.showEditForm = function(id, title, content) {
+      const itemBox = document.getElementById(`item-${id}`);
+      itemBox.innerHTML = `
+        <div class="edit-box">
+          <div class="label" style="margin-top:0;">질문 수정</div>
+          <input id="edit-title-${id}" type="text" value="${title}" />
+          <div class="label">답변 내용 수정</div>
+          <textarea id="edit-content-${id}" rows="4">${content}</textarea>
+          <div class="button-row">
+            <button class="cancel-btn" id="cancel-${id}">취소</button>
+            <button class="save-btn" onclick="updateData('${id}')">저장하기</button>
+          </div>
+        </div>
+      `;
+      document.getElementById(`cancel-${id}`).addEventListener('click', () => {
+        if (currentUser) startRealtimeDataListener(currentUser.uid);
+      });
+    };
+
+    makeBtn.addEventListener('click', askElectricDoctor);
+    clearBtn.addEventListener('click', clearPage);
 
     function base64ToAudioUrl(base64, mimeType) {
       const byteCharacters = atob(base64);
       const byteArrays = [];
-
       for (let offset = 0; offset < byteCharacters.length; offset += 512) {
         const slice = byteCharacters.slice(offset, offset + 512);
         const byteNumbers = new Array(slice.length);
-
         for (let i = 0; i < slice.length; i++) {
           byteNumbers[i] = slice.charCodeAt(i);
         }
-
         const byteArray = new Uint8Array(byteNumbers);
         byteArrays.push(byteArray);
       }
-
-      const blob = new Blob(byteArrays, { type: mimeType });
-      return URL.createObjectURL(blob);
+      return URL.createObjectURL(new Blob(byteArrays, { type: mimeType }));
     }
 
     function makeFileName() {
       const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      return `electric-doctor-${year}${month}${day}.mp3`;
-    }
-
-    function setLoading(isLoading) {
-      makeBtn.disabled = isLoading;
-      makeBtn.textContent = isLoading ? '⚡ 생성 중...' : '💡 AI 박사에게 질문하기';
+      return `electric-doctor-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}.mp3`;
     }
 
     function clearPage() {
       textInput.value = '';
-      statusBox.textContent = '';
+      setStatus('');
       aiResponseText.textContent = '';
       audioPlayer.removeAttribute('src');
       downloadLink.href = '#';
       resultBox.classList.add('hidden');
     }
+
+    function escapeHTML(text) {
+      return String(text)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function escapeForAttribute(text) {
+      return escapeHTML(text).replaceAll('`', '&#096;');
+    }
+
+    function getKoreanErrorMessage(code) {
+      switch (code) {
+        case 'auth/email-already-in-use': return '이미 가입된 이메일입니다.';
+        case 'auth/invalid-email': return '이메일 형식이 올바르지 않습니다.';
+        case 'auth/weak-password': return '비밀번호가 너무 약합니다. 6자리 이상으로 입력해주세요.';
+        case 'auth/user-not-found': return '가입되지 않은 이메일입니다.';
+        case 'auth/wrong-password': return '비밀번호가 올바르지 않습니다.';
+        case 'auth/invalid-credential': return '이메일 또는 비밀번호가 올바르지 않습니다.';
+        case 'auth/network-request-failed': return '네트워크 연결을 확인해주세요.';
+        default: return `오류가 발생했습니다: ${code}`;
+      }
+    }
+
+    // 엔터키 처리 단축키 
+    document.addEventListener('keydown', function(event) {
+      const activeId = document.activeElement.id;
+      if (event.key === 'Enter' && !event.ctrlKey) {
+        if (activeId === 'emailInput' || activeId === 'passwordInput') {
+          loginBtn.click();
+        }
+      }
+      if (event.key === 'Enter' && event.ctrlKey) {
+        if (activeId === 'textInput') {
+          askElectricDoctor();
+        }
+      }
+    });
   </script>
 </body>
 </html>

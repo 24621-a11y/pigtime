@@ -1,24 +1,391 @@
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } 
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>전기 진로 공학 계산기</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-import { getFirestore, collection, addDoc } 
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #cfd8dc, #eceff1);
+      font-family: Arial, sans-serif;
+    }
 
-const firebaseConfig = {
-  apiKey: "여기에_API_KEY",
-  authDomain: "프로젝트.firebaseapp.com",
-  projectId: "프로젝트ID",
-  storageBucket: "프로젝트.appspot.com",
-  messagingSenderId: "번호",
-  appId: "앱ID"
-};
+    .calculator-container {
+      width: 360px;
+      padding: 24px;
+      border-radius: 24px;
+      background: #ffffff;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
 
-const app = initializeApp(firebaseConfig);
+    h1 {
+      margin: 0 0 16px;
+      text-align: center;
+      font-size: 22px;
+      color: #1a237e;
+    }
 
-window.auth = getAuth(app);
-window.db = getFirestore(app);
+    /* 탭 메뉴 스타일 */
+    .tabs {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      border-bottom: 2px solid #e0e0e0;
+    }
 
-window.provider = new GoogleAuthProvider();
-</script>
+    .tab-btn {
+      flex: 1;
+      padding: 10px 0;
+      font-size: 14px;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      color: #757575;
+      transition: 0.2s;
+      height: auto;
+      border-radius: 0;
+    }
+
+    .tab-btn:hover {
+      transform: none;
+      background: #f5f5f5;
+    }
+
+    .tab-btn.active {
+      color: #1a237e;
+      font-weight: bold;
+      border-bottom-color: #1a237e;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* 일반 계산기 스타일 (기존 유지 및 최적화) */
+    #display {
+      width: 100%;
+      height: 64px;
+      margin-bottom: 16px;
+      padding: 12px;
+      border: none;
+      border-radius: 14px;
+      background: #f4f6f8;
+      font-size: 28px;
+      text-align: right;
+      outline: none;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    button {
+      height: 54px;
+      border: none;
+      border-radius: 14px;
+      font-size: 18px;
+      cursor: pointer;
+      background: #edf1f5;
+      transition: 0.15s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      background: #dde5ec;
+    }
+
+    .operator {
+      background: #bbdefb;
+      color: #0d47a1;
+      font-weight: bold;
+    }
+
+    .equal {
+      background: #1a237e;
+      color: white;
+      font-weight: bold;
+      grid-column: span 2;
+    }
+
+    .clear {
+      background: #ef5350;
+      color: white;
+      font-weight: bold;
+    }
+
+    .zero {
+      grid-column: span 2;
+    }
+
+    /* 전기 전용 계산기 폼 스타일 */
+    .input-group {
+      margin-bottom: 12px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+
+    .input-group input, .input-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .elec-btn {
+      width: 100%;
+      background: #1a237e;
+      color: white;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .result-box {
+      margin-top: 15px;
+      padding: 12px;
+      background: #f1f3f9;
+      border-radius: 10px;
+      font-size: 15px;
+      color: #1a237e;
+      font-weight: bold;
+      text-align: center;
+      min-height: 45px;
+    }
+
+    .guide {
+      margin-top: 14px;
+      text-align: center;
+      font-size: 12px;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator-container">
+    <h1>전기 진로 공학 계산기</h1>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="openTab('general')">일반</button>
+      <button class="tab-btn" onclick="openTab('ohm')">옴/전력</button>
+      <button class="tab-btn" onclick="openTab('thd')">왜형률</button>
+    </div>
+
+    <div id="general" class="tab-content active">
+      <input id="display" type="text" placeholder="0" readonly />
+      <div class="buttons">
+        <button class="clear" onclick="clearDisplay()">C</button>
+        <button onclick="deleteLast()">⌫</button>
+        <button class="operator" onclick="addToDisplay('%')">%</button>
+        <button class="operator" onclick="addToDisplay('/')">÷</button>
+
+        <button onclick="addToDisplay('7')">7</button>
+        <button onclick="addToDisplay('8')">8</button>
+        <button onclick="addToDisplay('9')">9</button>
+        <button class="operator" onclick="addToDisplay('*')">×</button>
+
+        <button onclick="addToDisplay('4')">4</button>
+        <button onclick="addToDisplay('5')">5</button>
+        <button onclick="addToDisplay('6')">6</button>
+        <button class="operator" onclick="addToDisplay('-')">−</button>
+
+        <button onclick="addToDisplay('1')">1</button>
+        <button onclick="addToDisplay('2')">2</button>
+        <button onclick="addToDisplay('3')">3</button>
+        <button class="operator" onclick="addToDisplay('+')">+</button>
+
+        <button class="zero" onclick="addToDisplay('0')">0</button>
+        <button onclick="addToDisplay('.')">.</button>
+        <button class="equal" onclick="calculate()">=</button>
+      </div>
+      <div class="guide">키보드 숫자와 연산자도 사용할 수 있습니다.</div>
+    </div>
+
+    <div id="ohm" class="tab-content">
+      <div class="input-group">
+        <label>구하고자 하는 값 선택</label>
+        <select id="ohmType" onchange="toggleOhmInputs()">
+          <option value="V">전압 (V) 구하기</option>
+          <option value="I">전류 (I) 구하기</option>
+          <option value="R">저항 (R) 구하기</option>
+          <option value="P">전력 (P) 구하기</option>
+        </select>
+      </div>
+      <div id="ohmInputs">
+        </div>
+      <button class="elec-btn" onclick="calculateOhm()">계산하기</button>
+      <div class="result-box" id="ohmResult">결과가 여기에 표시됩니다.</div>
+    </div>
+
+    <div id="thd" class="tab-content">
+      <div class="input-group">
+        <label>기본파 성분의 실효값 (값만 입력)</label>
+        <input type="number" id="fundVal" placeholder="예: 100" />
+      </div>
+      <div class="input-group">
+        <label>전체 고조파 성분의 실효값 (값만 입력)</label>
+        <input type="number" id="harmVal" placeholder="예: 5" />
+      </div>
+      <button class="elec-btn" onclick="calculateTHD()">THD 계산하기</button>
+      <div class="result-box" id="thdResult">결과가 여기에 표시됩니다.</div>
+    </div>
+
+  </div>
+
+  <script>
+    // --- 탭 전환 로직 ---
+    function openTab(tabId) {
+      const contents = document.querySelectorAll('.tab-content');
+      const tabs = document.querySelectorAll('.tab-btn');
+      
+      contents.forEach(content => content.classList.remove('active'));
+      tabs.forEach(tab => tab.classList.remove('active'));
+      
+      document.getElementById(tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    // --- 1. 일반 계산기 로직 (기존 유지) ---
+    const display = document.getElementById('display');
+
+    function addToDisplay(value) {
+      display.value += value;
+    }
+
+    function clearDisplay() {
+      display.value = '';
+    }
+
+    function deleteLast() {
+      display.value = display.value.slice(0, -1);
+    }
+
+    function calculate() {
+      try {
+        if (display.value.trim() === '') return;
+        const result = Function('return ' + display.value)();
+        display.value = result;
+      } catch (error) {
+        display.value = '오류';
+        setTimeout(clearDisplay, 1000);
+      }
+    }
+
+    document.addEventListener('keydown', function(event) {
+      // 일반 계산기 탭이 열려있을 때만 키보드 이벤트 활성화
+      if(!document.getElementById('general').classList.contains('active')) return;
+      
+      const key = event.key;
+      if (!isNaN(key) || ['+', '-', '*', '/', '.', '%'].includes(key)) {
+        addToDisplay(key);
+      } else if (key === 'Enter') {
+        calculate();
+      } else if (key === 'Backspace') {
+        deleteLast();
+      } else if (key === 'Escape') {
+        clearDisplay();
+      }
+    });
+
+    // --- 2. 옴의 법칙 / 전력 계산 로직 ---
+    function toggleOhmInputs() {
+      const type = document.getElementById('ohmType').value;
+      const container = document.getElementById('ohmInputs');
+      let html = '';
+
+      if (type === 'V') {
+        html = `
+          <div class="input-group"><label>전류 I (A)</label><input type="number" id="input1"></div>
+          <div class="input-group"><label>저항 R (Ω)</label><input type="number" id="input2"></div>`;
+      } else if (type === 'I') {
+        html = `
+          <div class="input-group"><label>전압 V (V)</label><input type="number" id="input1"></div>
+          <div class="input-group"><label>저항 R (Ω)</label><input type="number" id="input2"></div>`;
+      } else if (type === 'R') {
+        html = `
+          <div class="input-group"><label>전압 V (V)</label><input type="number" id="input1"></div>
+          <div class="input-group"><label>전류 I (A)</label><input type="number" id="input2"></div>`;
+      } else if (type === 'P') {
+        html = `
+          <div class="input-group"><label>전압 V (V)</label><input type="number" id="input1"></div>
+          <div class="input-group"><label>전류 I (A)</label><input type="number" id="input2"></div>`;
+      }
+      container.innerHTML = html;
+    }
+
+    function calculateOhm() {
+      const type = document.getElementById('ohmType').value;
+      const val1 = parseFloat(document.getElementById('input1')?.value);
+      const val2 = parseFloat(document.getElementById('input2')?.value);
+      const resultBox = document.getElementById('ohmResult');
+
+      if (isNaN(val1) || isNaN(val2)) {
+        resultBox.innerText = '올바른 값을 입력해주세요.';
+        return;
+      }
+
+      let result = 0;
+      if (type === 'V') {
+        result = val1 * val2;
+        resultBox.innerText = `전압(V) = ${result.toFixed(2)} V`;
+      } else if (type === 'I') {
+        if(val2 === 0) { resultBox.innerText = '저항은 0이 될 수 없습니다.'; return; }
+        result = val1 / val2;
+        resultBox.innerText = `전류(I) = ${result.toFixed(2)} A`;
+      } else if (type === 'R') {
+        if(val2 === 0) { resultBox.innerText = '전류는 0이 될 수 없습니다.'; return; }
+        result = val1 / val2;
+        resultBox.innerText = `저항(R) = ${result.toFixed(2)} Ω`;
+      } else if (type === 'P') {
+        result = val1 * val2;
+        resultBox.innerText = `전력(P) = ${result.toFixed(2)} W`;
+      }
+    }
+
+    // --- 3. 왜형률(THD) 계산 로직 ---
+    function calculateTHD() {
+      const fund = parseFloat(document.getElementById('fundVal').value);
+      const harm = parseFloat(document.getElementById('harmVal').value);
+      const resultBox = document.getElementById('thdResult');
+
+      if (isNaN(fund) || isNaN(harm)) {
+        resultBox.innerText = '올바른 값을 입력해주세요.';
+        return;
+      }
+      if (fund === 0) {
+        resultBox.innerText = '기본파는 0이 될 수 없습니다.';
+        return;
+      }
+
+      // THD 공식 = (고조파 실효값 / 기본파 실효값) * 100
+      const thd = (harm / fund) * 100;
+      resultBox.innerText = `왜형률(THD) = ${thd.toFixed(2)} %`;
+    }
+
+    // 초기 실행 시 옴의 법칙 입력창 세팅
+    toggleOhmInputs();
+  </script>
+</body>
+</html>

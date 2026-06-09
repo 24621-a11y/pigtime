@@ -156,4 +156,227 @@
       margin-top: 20px;
       padding: 20px;
       border-radius: 18px;
-      background
+      background: #f5f5f5;
+      border: 1px solid #dcdcdc;
+    }
+
+    .ai-response {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #e0e0e0;
+      margin-bottom: 14px;
+      font-size: 16px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    audio {
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .help {
+      margin-top: 20px;
+      font-size: 13px;
+      color: #777;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 700px) {
+      .option-box { grid-template-columns: 1fr; }
+      .button-row { justify-content: stretch; }
+      button, .download-link { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚡ 전기 AI 박사 & TTS 상담소</h1>
+    <div class="subtitle">전기에 대해 질문하면 AI 박사가 답변하고 음성으로 읽어줍니다</div>
+
+    <div class="info">
+      <strong>[작동 방식 변경 안내]</strong><br />
+      질문을 입력하면 Apps Script 서버를 통해 <strong>전기공학 AI 박사의 답변</strong>을 먼저 생성한 후, 그 답변을 OpenAI TTS를 통해 음성(mp3)으로 변환하여 가져옵니다.
+    </div>
+
+    <div class="label">목소리 및 생성 설정</div>
+    <div class="option-box">
+      <select id="modelSelect">
+        <option value="tts-1">tts-1 빠른 생성</option>
+        <option value="tts-1-hd">tts-1-hd 고품질</option>
+      </select>
+
+      <select id="voiceSelect">
+        <option value="onyx" selected>onyx (진중한 박사님 타입)</option>
+        <option value="alloy">alloy (기본)</option>
+        <option value="echo">echo</option>
+        <option value="fable">fable</option>
+        <option value="nova">nova</option>
+        <option value="shimmer">shimmer</option>
+      </select>
+
+      <input id="speedInput" type="number" min="0.25" max="4.0" step="0.05" value="1.0" placeholder="말하기 속도" />
+    </div>
+
+    <div>
+      <div class="label">전기 관련 질문 입력</div>
+      <textarea id="textInput" placeholder="전기에 대해 궁금한 점을 질문해보세요! &#10;예: 옴의 법칙이 무엇인지 쉽게 설명해 주세요. / 교류와 직류의 차이점은 무엇인가요?"></textarea>
+    </div>
+
+    <div class="button-row">
+      <button class="clear-btn" id="clearBtn">초기화</button>
+      <button class="make-btn" id="makeBtn">💡 AI 박사에게 질문하기</button>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div id="resultBox" class="result-box hidden">
+      <div class="label">👨‍🔬 AI 전기 박사의 답변</div>
+      <div id="aiResponseText" class="ai-response"></div>
+
+      <div class="label">🔊 답변 음성 듣기</div>
+      <audio id="audioPlayer" controls></audio>
+      <div class="button-row">
+        <a id="downloadLink" class="download-link" href="#" download="electric-doctor-answer.mp3">오디오 mp3 다운로드</a>
+      </div>
+    </div>
+
+    <div class="help">
+      * 복잡한 질문은 AI 답변과 음성 생성에 최대 10~20초 이상 소요될 수 있습니다.<br />
+      * Ctrl + Enter를 누르면 바로 질문이 전송됩니다.
+    </div>
+  </div>
+
+  <script>
+    // 기존에 세팅해두신 Google Apps Script 웹앱 URL
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyDP4eGKF3zudEwcIm_n4C5JUpU3ZuiGZKigj2HAaCtlYCx8luWxI0Cb3Y1zM1K9z_q_w/exec';
+
+    const textInput = document.getElementById('textInput');
+    const modelSelect = document.getElementById('modelSelect');
+    const voiceSelect = document.getElementById('voiceSelect');
+    const speedInput = document.getElementById('speedInput');
+    const makeBtn = document.getElementById('makeBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const statusBox = document.getElementById('status');
+    const resultBox = document.getElementById('resultBox');
+    const aiResponseText = document.getElementById('aiResponseText');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const downloadLink = document.getElementById('downloadLink');
+
+    makeBtn.addEventListener('click', askElectricDoctor);
+    clearBtn.addEventListener('click', clearPage);
+
+    textInput.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter' && event.ctrlKey) {
+        askElectricDoctor();
+      }
+    });
+
+    async function askElectricDoctor() {
+      const question = textInput.value.trim();
+      const model = modelSelect.value;
+      const voice = voiceSelect.value;
+      const speed = Number(speedInput.value || 1.0);
+
+      if (!question) {
+        alert('전기공학 박사님에게 물어볼 질문을 입력해주세요.');
+        return;
+      }
+
+      try {
+        setLoading(true);
+        resultBox.classList.add('hidden');
+        statusBox.textContent = '⚡ AI 박사님이 답변을 생각하고 음성을 만드는 중입니다... 잠시만 기다려주세요.';
+
+        // Apps Script 서버로 'question' 데이터와 tts 옵션을 함께 전송
+        const response = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            type: 'electric_expert_tts', // 서버 구분을 위한 타입명
+            text: question,              // 사용자의 질문
+            model: model,
+            voice: voice,
+            speed: speed
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        // 서버에서 받아온 AI 답변 텍스트 화면에 표기
+        if (data.responseText) {
+          aiResponseText.textContent = data.responseText;
+        } else {
+          aiResponseText.textContent = "답변 텍스트를 불러오지 못했습니다.";
+        }
+
+        if (!data.audioBase64) {
+          throw new Error('음성 데이터를 받지 못했습니다.');
+        }
+
+        // Base64 데이터를 재생 가능한 오디오 URL로 변환
+        const audioUrl = base64ToAudioUrl(data.audioBase64, 'audio/mpeg');
+
+        audioPlayer.src = audioUrl;
+        downloadLink.href = audioUrl;
+        downloadLink.download = makeFileName();
+        
+        resultBox.classList.remove('hidden');
+        statusBox.textContent = '✅ 답변 및 음성 생성 완료!';
+      } catch (error) {
+        console.error(error);
+        statusBox.textContent = '❌ 요청 실패';
+        alert('오류가 발생했습니다.\n\n' + error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function base64ToAudioUrl(base64, mimeType) {
+      const byteCharacters = atob(base64);
+      const byteArrays = [];
+
+      for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+        const slice = byteCharacters.slice(offset, offset + 512);
+        const byteNumbers = new Array(slice.length);
+
+        for (let i = 0; i < slice.length; i++) {
+          byteNumbers[i] = slice.charCodeAt(i);
+        }
+
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+      }
+
+      const blob = new Blob(byteArrays, { type: mimeType });
+      return URL.createObjectURL(blob);
+    }
+
+    function makeFileName() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `electric-doctor-${year}${month}${day}.mp3`;
+    }
+
+    function setLoading(isLoading) {
+      makeBtn.disabled = isLoading;
+      makeBtn.textContent = isLoading ? '⚡ 생성 중...' : '💡 AI 박사에게 질문하기';
+    }
+
+    function clearPage() {
+      textInput.value = '';
+      statusBox.textContent = '';
+      aiResponseText.textContent = '';
+      audioPlayer.removeAttribute('src');
+      downloadLink.href = '#';
+      resultBox.classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

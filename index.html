@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>전기 AI 박사 & TTS 시스템</title>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
   <style>
     * { box-sizing: border-box; }
 
@@ -64,7 +68,6 @@
       border-radius: 12px;
       font-size: 14px;
       outline: none;
-      background-color: #fca;
       background: #fff;
     }
 
@@ -196,8 +199,8 @@
     <div class="subtitle">전기에 대해 질문하면 AI 박사가 답변하고 음성으로 읽어줍니다</div>
 
     <div class="info">
-      <strong>[작동 방식 변경 안내]</strong><br />
-      질문을 입력하면 Apps Script 서버를 통해 <strong>전기공학 AI 박사의 답변</strong>을 먼저 생성한 후, 그 답변을 OpenAI TTS를 통해 음성(mp3)으로 변환하여 가져옵니다.
+      <strong>[작동 방식 및 저장 안내]</strong><br />
+      질문을 입력하면 전기공학 AI 박사의 답변과 음성을 생성한 후, 대화 결과물이 <strong>Firebase Firestore 데이터베이스</strong>에 자동으로 기록됩니다.
     </div>
 
     <div class="label">목소리 및 생성 설정</div>
@@ -249,6 +252,22 @@
   </div>
 
   <script>
+    // 🔥 주신 Firebase 프로젝트 키 정보를 그대로 매핑했습니다.
+    const firebaseConfig = {
+      apiKey: "AIzaSyDvDGmsuZtckupjVDm89Fr4cXQKVup3Zs0",
+      authDomain: "test-7c414.firebaseapp.com",
+      databaseURL: "https://test-7c414-default-rtdb.firebaseio.com",
+      projectId: "test-7c414",
+      storageBucket: "test-7c414.firebasestorage.app",
+      messagingSenderId: "760368119906",
+      appId: "1:760368119906:web:881bce0639c0529117913b",
+      measurementId: "G-6G3J8QHW51"
+    };
+
+    // Firebase 및 Firestore 초기화
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
     // 기존에 세팅해두신 Google Apps Script 웹앱 URL
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4fXNSfeRl6RHk89WTp4M-f6n2sU0MYIkLAsinURyhM2APqDqeAXZuIP31bvEkbLPL/exec';
 
@@ -293,8 +312,8 @@
         const response = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
           body: JSON.stringify({
-            type: 'electric_expert_tts', // 서버 구분을 위한 타입명
-            text: question,              // 사용자의 질문
+            type: 'electric_expert_tts', 
+            text: question,              
             model: model,
             voice: voice,
             speed: speed
@@ -326,7 +345,19 @@
         downloadLink.download = makeFileName();
         
         resultBox.classList.remove('hidden');
-        statusBox.textContent = '✅ 답변 및 음성 생성 완료!';
+        statusBox.textContent = '✅ 답변 완료! Firebase에 대화 기록을 기록하는 중입니다...';
+
+        // 🔥 [추가 로직] Firestore의 'history' 컬렉션에 실시간 데이터 추가
+        await db.collection("history").add({
+          question: question,
+          answer: data.responseText,
+          voiceOption: voice,
+          speedOption: speed,
+          modelOption: model,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp() // 서버 표준 시간 저장
+        });
+
+        statusBox.textContent = '✅ 답변 생성 및 Firebase 저장 성공!';
       } catch (error) {
         console.error(error);
         statusBox.textContent = '❌ 요청 실패';

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>전기 진로 공학 계산기</title>
+  <title>전기 진로 공학 계산기 (AI TTS 통합형)</title>
   <style>
     * {
       box-sizing: border-box;
@@ -17,10 +17,11 @@
       align-items: center;
       background: linear-gradient(135deg, #cfd8dc, #eceff1);
       font-family: Arial, sans-serif;
+      padding: 20px 0;
     }
 
     .calculator-container {
-      width: 360px;
+      width: 380px;
       padding: 24px;
       border-radius: 24px;
       background: #ffffff;
@@ -75,7 +76,7 @@
       display: block;
     }
 
-    /* 일반 계산기 스타일 (기존 유지 및 최적화) */
+    /* 일반 계산기 스타일 */
     #display {
       width: 100%;
       height: 64px;
@@ -181,6 +182,77 @@
       font-size: 12px;
       color: #777;
     }
+
+    /* --- TTS 컴포넌트 추가 스타일 --- */
+    .tts-divider {
+      margin: 20px 0 15px;
+      border: 0;
+      border-top: 2px dashed #d1d5db;
+    }
+
+    .tts-section-title {
+      font-size: 14px;
+      color: #1a237e;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .tts-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .tts-options select, .tts-options input {
+      height: 36px;
+      padding: 0 8px;
+      font-size: 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    .status-text {
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      margin-top: 5px;
+      min-height: 18px;
+    }
+
+    .audio-container {
+      margin-top: 10px;
+      background: #f9fafb;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+    }
+
+    audio {
+      width: 100%;
+      height: 32px;
+    }
+
+    .dl-btn-wrapper {
+      margin-top: 8px;
+      text-align: right;
+    }
+
+    .download-link {
+      font-size: 12px;
+      color: #7e57c2;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .download-link:hover {
+      text-decoration: underline;
+    }
+
+    .hidden {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -233,8 +305,7 @@
           <option value="P">전력 (P) 구하기</option>
         </select>
       </div>
-      <div id="ohmInputs">
-        </div>
+      <div id="ohmInputs"></div>
       <button class="elec-btn" onclick="calculateOhm()">계산하기</button>
       <div class="result-box" id="ohmResult">결과가 여기에 표시됩니다.</div>
     </div>
@@ -252,9 +323,53 @@
       <div class="result-box" id="thdResult">결과가 여기에 표시됩니다.</div>
     </div>
 
+    <hr class="tts-divider" />
+    <div class="tts-section-title">🔊 AI 음성 안내 설정</div>
+    
+    <div class="tts-options">
+      <select id="modelSelect">
+        <option value="tts-1">tts-1 빠른 생성</option>
+        <option value="tts-1-hd">tts-1-hd 고품질</option>
+      </select>
+
+      <select id="voiceSelect">
+        <option value="alloy" selected>alloy</option>
+        <option value="echo">echo</option>
+        <option value="fable">fable</option>
+        <option value="onyx">onyx</option>
+        <option value="nova">nova</option>
+        <option value="shimmer">shimmer</option>
+      </select>
+    </div>
+    
+    <div class="tts-options" style="grid-template-columns: 1fr;">
+      <input id="speedInput" type="number" min="0.25" max="4.0" step="0.05" value="1.0" placeholder="말하기 속도 (0.25 ~ 4.0)" />
+    </div>
+
+    <div id="status" class="status-text">계산하면 AI 음성이 자동으로 읽어줍니다.</div>
+
+    <div id="resultBox" class="audio-container hidden">
+      <audio id="audioPlayer" controls></audio>
+      <div class="dl-btn-wrapper">
+        <a id="downloadLink" class="download-link" href="#" download="tts-audio.mp3">다운로드 (mp3)</a>
+      </div>
+    </div>
+
   </div>
 
   <script>
+    // --- Google Apps Script URL ---
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxDNMIktE288seW2Mr5YgksYFeAP3SNl8YyQZFa1DuvD0N_8pjRLDmxkZBYyQ4WGPmt/exec';
+
+    // TTS 컴포넌트 DOM 객체
+    const modelSelect = document.getElementById('modelSelect');
+    const voiceSelect = document.getElementById('voiceSelect');
+    const speedInput = document.getElementById('speedInput');
+    const statusBox = document.getElementById('status');
+    const resultBox = document.getElementById('resultBox');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const downloadLink = document.getElementById('downloadLink');
+
     // --- 탭 전환 로직 ---
     function openTab(tabId) {
       const contents = document.querySelectorAll('.tab-content');
@@ -267,7 +382,7 @@
       event.currentTarget.classList.add('active');
     }
 
-    // --- 1. 일반 계산기 로직 (기존 유지) ---
+    // --- 1. 일반 계산기 로직 ---
     const display = document.getElementById('display');
 
     function addToDisplay(value) {
@@ -287,14 +402,17 @@
         if (display.value.trim() === '') return;
         const result = Function('return ' + display.value)();
         display.value = result;
+        
+        // TTS 연동: 결과값 읽기
+        generateTTS(`결과는 ${result} 입니다.`);
       } catch (error) {
         display.value = '오류';
+        generateTTS("계산 오류가 발생했습니다.");
         setTimeout(clearDisplay, 1000);
       }
     }
 
     document.addEventListener('keydown', function(event) {
-      // 일반 계산기 탭이 열려있을 때만 키보드 이벤트 활성화
       if(!document.getElementById('general').classList.contains('active')) return;
       
       const key = event.key;
@@ -342,26 +460,45 @@
       const resultBox = document.getElementById('ohmResult');
 
       if (isNaN(val1) || isNaN(val2)) {
-        resultBox.innerText = '올바른 값을 입력해주세요.';
+        const errorMsg = '올바른 값을 입력해주세요.';
+        resultBox.innerText = errorMsg;
+        generateTTS(errorMsg);
         return;
       }
 
       let result = 0;
+      let ttsText = '';
+      
       if (type === 'V') {
         result = val1 * val2;
         resultBox.innerText = `전압(V) = ${result.toFixed(2)} V`;
+        ttsText = `계산된 전압은 ${result.toFixed(2)} 볼트입니다.`;
       } else if (type === 'I') {
-        if(val2 === 0) { resultBox.innerText = '저항은 0이 될 수 없습니다.'; return; }
+        if(val2 === 0) { 
+          resultBox.innerText = '저항은 0이 될 수 없습니다.'; 
+          generateTTS('저항은 0이 될 수 없습니다.');
+          return; 
+        }
         result = val1 / val2;
         resultBox.innerText = `전류(I) = ${result.toFixed(2)} A`;
+        ttsText = `계산된 전류는 ${result.toFixed(2)} 암페어입니다.`;
       } else if (type === 'R') {
-        if(val2 === 0) { resultBox.innerText = '전류는 0이 될 수 없습니다.'; return; }
+        if(val2 === 0) { 
+          resultBox.innerText = '전류는 0이 될 수 없습니다.'; 
+          generateTTS('전류는 0이 될 수 없습니다.');
+          return; 
+        }
         result = val1 / val2;
         resultBox.innerText = `저항(R) = ${result.toFixed(2)} Ω`;
+        ttsText = `계산된 저항은 ${result.toFixed(2)} 옴입니다.`;
       } else if (type === 'P') {
         result = val1 * val2;
         resultBox.innerText = `전력(P) = ${result.toFixed(2)} W`;
+        ttsText = `계산된 전력은 ${result.toFixed(2)} 와트입니다.`;
       }
+      
+      // TTS 생성 요청
+      generateTTS(ttsText);
     }
 
     // --- 3. 왜형률(THD) 계산 로직 ---
@@ -372,20 +509,80 @@
 
       if (isNaN(fund) || isNaN(harm)) {
         resultBox.innerText = '올바른 값을 입력해주세요.';
+        generateTTS('올바른 값을 입력해주세요.');
         return;
       }
       if (fund === 0) {
         resultBox.innerText = '기본파는 0이 될 수 없습니다.';
+        generateTTS('기본파는 0이 될 수 없습니다.');
         return;
       }
 
-      // THD 공식 = (고조파 실효값 / 기본파 실효값) * 100
       const thd = (harm / fund) * 100;
       resultBox.innerText = `왜형률(THD) = ${thd.toFixed(2)} %`;
+      
+      // TTS 생성 요청
+      generateTTS(`계산된 왜형률은 ${thd.toFixed(2)} 퍼센트입니다.`);
     }
 
-    // 초기 실행 시 옴의 법칙 입력창 세팅
-    toggleOhmInputs();
-  </script>
-</body>
-</html>
+    // --- 4. 공통 AI TTS 음성 변환 및 재생 엔진 ---
+    async function generateTTS(textToSpeak) {
+      const model = modelSelect.value;
+      const voice = voiceSelect.value;
+      const speed = Number(speedInput.value || 1.0);
+
+      if (!textToSpeak) return;
+
+      if (speed < 0.25 || speed > 4.0) {
+        alert('속도는 0.25부터 4.0 사이로 입력해주세요.');
+        return;
+      }
+
+      try {
+        resultBox.classList.add('hidden');
+        statusBox.textContent = 'AI 음성 생성 중...';
+
+        const response = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            type: 'tts',
+            text: textToSpeak,
+            model: model,
+            voice: voice,
+            speed: speed
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.error) throw new Error(data.error);
+        if (!data.audioBase64) throw new Error('음성 데이터를 받지 못했습니다.');
+
+        const audioUrl = base64ToAudioUrl(data.audioBase64, 'audio/mpeg');
+
+        // 플레이어 세팅 및 재생
+        audioPlayer.src = audioUrl;
+        downloadLink.href = audioUrl;
+        downloadLink.download = makeFileName();
+        
+        resultBox.classList.remove('hidden');
+        statusBox.textContent = '🔊 음성 안내 재생 중';
+        
+        // 자동 재생 호출
+        audioPlayer.play().catch(e => {
+          console.log("자동 재생이 브라우저에 의해 차단되었습니다. 재생 버튼을 눌러주세요.");
+          statusBox.textContent = '음성 생성 완료 (재생 버튼 클릭)';
+        });
+
+      } catch (error) {
+        console.error(error);
+        statusBox.textContent = '음성 생성 실패';
+      }
+    }
+
+    // 데이터 변환 유틸 함수들
+    function base64ToAudioUrl(base64, mimeType) {
+      const byteCharacters = atob(base64);
+      const byteArrays = [];
+
+      for (let offset =

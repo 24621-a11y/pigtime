@@ -45,12 +45,17 @@
       font-weight: 500;
     }
 
+    /* 🔐 로그인 박스 스타일 - 명확하게 보이도록 패딩 증가 및 배경 분리 */
     .auth-box {
       max-width: 420px;
-      margin: 0 auto;
+      margin: 20px auto;
       display: flex;
       flex-direction: column;
       gap: 12px;
+      background: #f7f9fb;
+      padding: 24px;
+      border-radius: 20px;
+      border: 1px solid #edf1f5;
     }
 
     input, select {
@@ -215,10 +220,11 @@
       border-radius: 16px;
     }
 
-    .hidden { display: none; }
+    /* 💡 숨김용 클래스 */
+    .hidden { display: none !important; }
 
     .notice, .help {
-      max-width: 100%;
+      max-width: 420px;
       margin: 20px auto 0;
       padding: 14px;
       border-radius: 14px;
@@ -227,6 +233,8 @@
       font-size: 14px;
       line-height: 1.6;
     }
+
+    .help { max-width: 100%; color: #777; background: #f5f5f5; }
 
     @media (max-width: 700px) {
       .option-box, .item, .top-bar { grid-template-columns: 1fr; flex-direction: column; align-items: stretch; }
@@ -239,7 +247,7 @@
 <body>
   <div class="container">
     <h1>⚡ 전기 AI 박사 & TTS 상담소</h1>
-    <div class="subtitle">Firebase 로그인 데이터 연동 최종 시스템</div>
+    <div class="subtitle">Firebase 로그인 데이터 연동 시스템</div>
 
     <section id="authSection">
       <div class="auth-box">
@@ -337,7 +345,7 @@
       off
     } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
-    // 💡 전달해주신 Firebase 정보 연동 완료
+    // 💡 Firebase 환경변수 셋팅
     const firebaseConfig = {
       apiKey: 'AIzaSyDO-v52Ehwphh5gW0WBzu9_DliMhOzy4Yo',
       authDomain: 'kang-f4e85.firebaseapp.com',
@@ -353,7 +361,6 @@
     const auth = getAuth(app);
     const database = getDatabase(app);
 
-    // 구글 앱스 스크립트 웹앱 URL 연동 유지
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4fXNSfeRl6RHk89WTp4M-f6n2sU0MYIkLAsinURyhM2APqDqeAXZuIP31bvEkbLPL/exec';
 
     const authSection = document.getElementById('authSection');
@@ -430,6 +437,7 @@
       }
     });
 
+    // 🔄 실시간 유저 인증 상태 감지 로직 (화면 전환 처리)
     onAuthStateChanged(auth, (user) => {
       if (user) {
         currentUser = user;
@@ -443,22 +451,21 @@
     });
 
     function showMainPage(user) {
-      authSection.classList.add('hidden');
-      mainSection.classList.remove('hidden');
+      authSection.classList.add('hidden'); // 로그인창 숨김
+      mainSection.classList.remove('hidden'); // 메인 기능 공개
       userEmail.textContent = user.email;
       emailInput.value = '';
       passwordInput.value = '';
     }
 
     function showAuthPage() {
-      authSection.classList.remove('hidden');
-      mainSection.classList.add('hidden');
+      authSection.classList.remove('hidden'); // 로그인창 전면 노출
+      mainSection.classList.add('hidden'); // 메인 기능 숨김
       userEmail.textContent = '';
       dataList.innerHTML = '';
       clearPage();
     }
 
-    // 📡 실시간 데이터 연동 핸들러
     function startRealtimeDataListener(uid) {
       stopRealtimeDataListener();
       setStatus('상담 내역 데이터를 동기화하는 중...');
@@ -486,7 +493,6 @@
       if (currentUser) startRealtimeDataListener(currentUser.uid);
     });
 
-    // 💡 전기공학 AI 박사에게 API 요청 로직
     async function askElectricDoctor() {
       const question = textInput.value.trim();
       const model = modelSelect.value;
@@ -521,7 +527,6 @@
         });
 
         const data = await response.json();
-
         if (data.error) throw new Error(data.error);
 
         if (data.responseText) {
@@ -540,13 +545,12 @@
         resultBox.classList.remove('hidden');
         setStatus('✅ 답변 성공! 내 계정에 대화 내역을 저장하는 중...');
 
-        // 💾 실시간 데이터베이스(RTDB)에 대화 내용 업로드 자동 연동
         const itemsRef = ref(database, `users/${currentUser.uid}/items`);
         const newItemRef = push(itemsRef);
 
         await set(newItemRef, {
-          title: question, // 질문 내용을 제목으로 활용
-          content: data.responseText, // 박사의 답변을 내용으로 활용
+          title: question,
+          content: data.responseText,
           createdAt: new Date().toLocaleString('ko-KR'),
           updatedAt: ''
         });
@@ -562,7 +566,6 @@
       }
     }
 
-    // 🗑️ 데이터 삭제 글로벌 스크립트 바인딩
     window.deleteData = async function(id) {
       if (!currentUser) return;
       const isConfirmed = confirm('정말 이 기록을 삭제하시겠습니까?');
@@ -576,7 +579,6 @@
       }
     };
 
-    // ✏️ 데이터 수정 글로벌 스크립트 바인딩
     window.updateData = async function(id) {
       if (!currentUser) return;
       const editTitle = document.getElementById(`edit-title-${id}`).value.trim();
@@ -599,7 +601,6 @@
       }
     };
 
-    // 화면에 저장 목록 렌더링
     function renderData(data) {
       dataList.innerHTML = '';
       if (!data) {
@@ -708,7 +709,6 @@
       }
     }
 
-    // 엔터키 처리 단축키 
     document.addEventListener('keydown', function(event) {
       const activeId = document.activeElement.id;
       if (event.key === 'Enter' && !event.ctrlKey) {
